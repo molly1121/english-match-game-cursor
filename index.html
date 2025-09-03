@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>英语单词消消乐 - 海关词汇</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="game-container">
+        <div class="game-main">
+            <header class="game-header">
+                <h1>英语单词消消乐</h1>
+                <p class="subtitle">海关常用词汇学习</p>
+            </header>
+
+            <div class="game-info">
+                <div class="level-info">
+                    <span>第 <span id="current-level">1</span> 关</span>
+                    <span>词汇数: <span id="vocab-count">6</span></span>
+                </div>
+                <div class="score-info">
+                    <span>得分: <span id="score">0</span></span>
+                    <span>时间: <span id="time">00:00</span></span>
+                </div>
+            </div>
+
+            <div class="game-board" id="game-board">
+                <!-- 游戏板将通过JavaScript动态生成 -->
+            </div>
+
+                    <div class="game-controls">
+            <button id="start-btn" class="btn btn-primary">开始游戏</button>
+            <button id="reshuffle-btn" class="btn btn-warning" style="display: none;">重新打乱</button>
+            <button id="next-level-btn" class="btn btn-secondary" style="display: none;">下一关</button>
+            <button id="restart-btn" class="btn btn-secondary" style="display: none;">重新开始</button>
+        </div>
+        </div>
+
+        <div class="game-sidebar">
+            <div class="vocabulary-list">
+                <h3>本关词汇</h3>
+                <div id="vocab-display"></div>
+            </div>
+        </div>
+    </div>
+
+        <div class="game-over-modal" id="game-over-modal" style="display: none;">
+            <div class="modal-content">
+                <h2 id="modal-title">游戏结束</h2>
+                <p id="modal-message"></p>
+                <div class="modal-buttons">
+                    <button id="modal-next-btn" class="btn btn-primary">下一关</button>
+                    <button id="modal-restart-btn" class="btn btn-secondary">重新开始</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
