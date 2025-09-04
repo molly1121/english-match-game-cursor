@@ -440,20 +440,20 @@ function adjustFontSize(tile) {
     const computedStyle = window.getComputedStyle(tile);
     const tileSize = parseFloat(computedStyle.width);
     
-    // 为老年人优化：手机端使用更大的字体，并留出更多margin
-    const maxWidth = tileSize * 0.9; // 使用瓦片宽度的90%，留出10%的margin
-    const defaultFontSize = isMobile ? tileSize * 0.35 : tileSize * 0.25; // 大幅增大默认字体
-    const minFontSize = isMobile ? tileSize * 0.15 : tileSize * 0.12; // 提高最小字体限制
+    // 为老年人优化：使用更大的正常字体
+    const maxWidth = tileSize * 0.95; // 使用瓦片宽度的95%，留出5%的margin
+    const normalFontSize = isMobile ? tileSize * 0.5 : tileSize * 0.4; // 更大的正常字体
+    const minFontSize = isMobile ? tileSize * 0.2 : tileSize * 0.15; // 更大的最小字体限制
     
-    // 先设置为默认字体大小（使用px单位更精确）
-    tile.style.fontSize = defaultFontSize + 'px';
+    // 先设置为正常大字体
+    tile.style.fontSize = normalFontSize + 'px';
     
     // 等待一帧确保字体已应用
     requestAnimationFrame(() => {
         // 检查单词是否超出边界
         if (tile.scrollWidth > maxWidth) {
             // 只有超出边界时才调整字体大小
-            let fontSize = defaultFontSize;
+            let fontSize = normalFontSize;
             while (tile.scrollWidth > maxWidth && fontSize > minFontSize) {
                 fontSize -= 1; // 每次减少1px，更精细的调整
                 tile.style.fontSize = fontSize + 'px';
@@ -475,7 +475,7 @@ function checkAllTilesFontSize() {
     const tiles = document.querySelectorAll('.tile');
     tiles.forEach(tile => {
         const tileWidth = parseFloat(getComputedStyle(tile).width);
-        const maxWidth = tileWidth * 0.9;
+        const maxWidth = tileWidth * 0.95;
         
         if (tile.scrollWidth > maxWidth) {
             forceAdjustFontSize(tile);
@@ -488,24 +488,27 @@ function forceAdjustFontSize(tile) {
     const isMobile = window.innerWidth <= 768;
     const computedStyle = window.getComputedStyle(tile);
     const tileSize = parseFloat(computedStyle.width);
-    const maxWidth = tileSize * 0.9; // 使用90%的宽度
-    const minFontSize = isMobile ? tileSize * 0.15 : tileSize * 0.12; // 更大的最小字体
+    const maxWidth = tileSize * 0.95; // 使用95%的宽度
+    const normalFontSize = isMobile ? tileSize * 0.5 : tileSize * 0.4; // 更大的正常字体
+    const minFontSize = isMobile ? tileSize * 0.2 : tileSize * 0.15; // 更大的最小字体
     
-    // 从最小字体开始，逐步增大直到合适
-    let fontSize = minFontSize;
-    tile.style.fontSize = fontSize + 'px';
+    // 先尝试正常大字体
+    tile.style.fontSize = normalFontSize + 'px';
     
     // 等待字体应用后检查
     requestAnimationFrame(() => {
-        while (tile.scrollWidth <= maxWidth && fontSize < (isMobile ? tileSize * 0.4 : tileSize * 0.3)) {
-            fontSize += 0.5;
-            tile.style.fontSize = fontSize + 'px';
+        // 如果正常字体超出，从正常字体开始缩小
+        if (tile.scrollWidth > maxWidth) {
+            let fontSize = normalFontSize;
+            while (tile.scrollWidth > maxWidth && fontSize > minFontSize) {
+                fontSize -= 1;
+                tile.style.fontSize = fontSize + 'px';
+            }
         }
         
-        // 如果最后一步超出了，回退一步
+        // 如果还是超出，使用最小字体
         if (tile.scrollWidth > maxWidth) {
-            fontSize -= 0.5;
-            tile.style.fontSize = fontSize + 'px';
+            tile.style.fontSize = minFontSize + 'px';
         }
     });
 }
@@ -728,7 +731,7 @@ function createTile(vocab, row, col) {
     
     // 延迟再次检查，确保字体完全调整好
     setTimeout(() => {
-        if (tile.scrollWidth > parseFloat(getComputedStyle(tile).width) * 0.9) {
+        if (tile.scrollWidth > parseFloat(getComputedStyle(tile).width) * 0.95) {
             forceAdjustFontSize(tile);
         }
     }, 100);
@@ -1152,7 +1155,7 @@ function fillBoard() {
                     
                     // 延迟再次检查，确保字体完全调整好
                     setTimeout(() => {
-                        if (tile.scrollWidth > parseFloat(getComputedStyle(tile).width) * 0.9) {
+                        if (tile.scrollWidth > parseFloat(getComputedStyle(tile).width) * 0.95) {
                             forceAdjustFontSize(tile);
                         }
                     }, 100);
