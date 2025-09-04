@@ -440,10 +440,10 @@ function adjustFontSize(tile) {
     const computedStyle = window.getComputedStyle(tile);
     const tileSize = parseFloat(computedStyle.width);
     
-    // 为老年人优化：6x6格子更大，但移动端需要更保守的字体设置
-    const maxWidth = tileSize * 0.85; // 使用瓦片宽度的85%，留出15%的margin
-    const normalFontSize = isMobile ? tileSize * 0.45 : tileSize * 0.5; // 移动端稍微保守一些
-    const minFontSize = isMobile ? tileSize * 0.18 : tileSize * 0.2; // 移动端最小字体更小
+    // 为老年人优化：6x6格子更大，移动端需要更保守的字体设置
+    const maxWidth = tileSize * 0.8; // 使用瓦片宽度的80%，留出20%的margin
+    const normalFontSize = isMobile ? tileSize * 0.4 : tileSize * 0.5; // 移动端更保守
+    const minFontSize = isMobile ? tileSize * 0.12 : tileSize * 0.2; // 移动端最小字体更小
     
     // 先设置为正常大字体
     tile.style.fontSize = normalFontSize + 'px';
@@ -475,7 +475,7 @@ function checkAllTilesFontSize() {
     const tiles = document.querySelectorAll('.tile');
     tiles.forEach(tile => {
         const tileWidth = parseFloat(getComputedStyle(tile).width);
-        const maxWidth = tileWidth * 0.85;
+        const maxWidth = tileWidth * 0.8;
         
         if (tile.scrollWidth > maxWidth) {
             forceAdjustFontSize(tile);
@@ -488,16 +488,31 @@ function checkAllTilesFontSize() {
             const mobileTiles = document.querySelectorAll('.tile');
             mobileTiles.forEach(tile => {
                 const tileWidth = parseFloat(getComputedStyle(tile).width);
-                const maxWidth = tileWidth * 0.8; // 移动端更严格
+                const maxWidth = tileWidth * 0.75; // 移动端更严格
                 
                 if (tile.scrollWidth > maxWidth) {
                     const isMobile = true;
                     const tileSize = tileWidth;
-                    const minFontSize = tileSize * 0.15; // 移动端最小字体
+                    const minFontSize = tileSize * 0.1; // 移动端最小字体更小
                     tile.style.fontSize = minFontSize + 'px';
                 }
             });
         }, 200);
+        
+        // 移动端第二次检查，确保长单词也能显示
+        setTimeout(() => {
+            const mobileTiles = document.querySelectorAll('.tile');
+            mobileTiles.forEach(tile => {
+                const tileWidth = parseFloat(getComputedStyle(tile).width);
+                const maxWidth = tileWidth * 0.7; // 移动端最严格标准
+                
+                if (tile.scrollWidth > maxWidth) {
+                    const tileSize = tileWidth;
+                    const ultraMinFontSize = tileSize * 0.08; // 移动端超小字体
+                    tile.style.fontSize = ultraMinFontSize + 'px';
+                }
+            });
+        }, 400);
     }
 }
 
@@ -506,9 +521,9 @@ function forceAdjustFontSize(tile) {
     const isMobile = window.innerWidth <= 768;
     const computedStyle = window.getComputedStyle(tile);
     const tileSize = parseFloat(computedStyle.width);
-    const maxWidth = tileSize * 0.85; // 使用85%的宽度
-    const normalFontSize = isMobile ? tileSize * 0.45 : tileSize * 0.5; // 移动端稍微保守一些
-    const minFontSize = isMobile ? tileSize * 0.18 : tileSize * 0.2; // 移动端最小字体更小
+    const maxWidth = tileSize * 0.8; // 使用80%的宽度
+    const normalFontSize = isMobile ? tileSize * 0.4 : tileSize * 0.5; // 移动端更保守
+    const minFontSize = isMobile ? tileSize * 0.12 : tileSize * 0.2; // 移动端最小字体更小
     
     // 先尝试正常大字体
     tile.style.fontSize = normalFontSize + 'px';
@@ -749,7 +764,7 @@ function createTile(vocab, row, col) {
     
     // 延迟再次检查，确保字体完全调整好
     setTimeout(() => {
-        if (tile.scrollWidth > parseFloat(getComputedStyle(tile).width) * 0.85) {
+        if (tile.scrollWidth > parseFloat(getComputedStyle(tile).width) * 0.8) {
             forceAdjustFontSize(tile);
         }
     }, 100);
@@ -1173,7 +1188,7 @@ function fillBoard() {
                     
                     // 延迟再次检查，确保字体完全调整好
                     setTimeout(() => {
-                        if (tile.scrollWidth > parseFloat(getComputedStyle(tile).width) * 0.85) {
+                        if (tile.scrollWidth > parseFloat(getComputedStyle(tile).width) * 0.8) {
                             forceAdjustFontSize(tile);
                         }
                     }, 100);
