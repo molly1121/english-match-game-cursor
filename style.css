@@ -1,3 +1,8 @@
+:root {
+    --tile-size: 70px;
+    --tile-gap: 8px;
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -71,16 +76,15 @@ body {
     margin-bottom: 30px;
     box-shadow: 0 8px 32px rgba(0,0,0,0.1);
     display: grid;
-    gap: 8px;
+    gap: var(--tile-gap);
     justify-content: center;
-    max-width: 600px;
     margin-left: auto;
     margin-right: auto;
 }
 
 .tile {
-    width: 70px;
-    height: 70px;
+    width: var(--tile-size);
+    height: var(--tile-size);
     border-radius: 10px;
     display: flex;
     align-items: center;
@@ -125,8 +129,6 @@ body {
 .tile.matched {
     animation: pulse 0.6s ease-in-out;
 }
-
-
 
 @keyframes pulse {
     0%, 100% { transform: scale(1); }
@@ -389,18 +391,17 @@ body {
 }
 
 @media (max-width: 768px) {
+    :root {
+        --tile-size: 12vw; /* 小屏以视口宽度为基准自动缩放 */
+        --tile-gap: 6px;
+    }
+
     .game-header h1 {
-        font-size: 2.5rem;
+        font-size: 2.2rem;
     }
     
     .subtitle {
-        font-size: 1.2rem;
-    }
-    
-    .tile {
-        width: 60px;
-        height: 60px;
-        font-size: 0.8rem;
+        font-size: 1.1rem;
     }
     
     .game-info {

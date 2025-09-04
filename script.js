@@ -282,7 +282,8 @@ function startGame() {
 // 创建游戏板
 function createGameBoard() {
     gameBoard.innerHTML = '';
-    gameBoard.style.gridTemplateColumns = `repeat(${gameState.boardSize}, 1fr)`;
+    // 使用与CSS变量一致的列宽，避免在小屏幕被拉伸
+    gameBoard.style.gridTemplateColumns = `repeat(${gameState.boardSize}, var(--tile-size))`;
     
     const currentVocab = getCurrentVocabulary();
     gameState.board = [];
