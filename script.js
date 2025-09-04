@@ -408,22 +408,28 @@ function updateTileIds() {
 
 // 调整字体大小以适应单词长度
 function adjustFontSize(tile) {
-    const maxWidth = 60; // 瓦片内容区域最大宽度
-    const defaultFontSize = 0.9; // 默认字体大小（rem）
-    const minFontSize = 0.6; // 最小字体大小（rem）
+    // 根据屏幕大小动态调整最大宽度
+    const isMobile = window.innerWidth <= 768;
+    const tileSize = isMobile ? 12 : 70; // 获取瓦片实际大小
+    const maxWidth = isMobile ? tileSize * 0.8 : 60; // 手机端使用瓦片大小的80%
+    const defaultFontSize = isMobile ? 0.6 : 0.9; // 手机端默认字体更小
+    const minFontSize = 0.4; // 最小字体大小（rem）
     
     // 先设置为默认字体大小
     tile.style.fontSize = defaultFontSize + 'rem';
     
-    // 检查单词是否超出边界
-    if (tile.scrollWidth > maxWidth) {
-        // 只有超出边界时才调整字体大小
-        let fontSize = defaultFontSize;
-        while (tile.scrollWidth > maxWidth && fontSize > minFontSize) {
-            fontSize -= 0.05;
-            tile.style.fontSize = fontSize + 'rem';
+    // 等待一帧确保字体已应用
+    requestAnimationFrame(() => {
+        // 检查单词是否超出边界
+        if (tile.scrollWidth > maxWidth) {
+            // 只有超出边界时才调整字体大小
+            let fontSize = defaultFontSize;
+            while (tile.scrollWidth > maxWidth && fontSize > minFontSize) {
+                fontSize -= 0.05;
+                tile.style.fontSize = fontSize + 'rem';
+            }
         }
-    }
+    });
     
     // 标记字体大小已经调整过，防止后续再调整
     tile.dataset.fontAdjusted = 'true';
@@ -824,10 +830,22 @@ function eliminateMatches(matches) {
 // 朗读单词
 function speakWord(word) {
     if ('speechSynthesis' in window) {
+        // 停止之前的语音
+        speechSynthesis.cancel();
+        
         const utterance = new SpeechSynthesisUtterance(word);
         utterance.lang = 'en-US';
         utterance.rate = 0.8;
+        utterance.volume = 1.0;
+        utterance.pitch = 1.0;
+        
+        // 确保语音播放
+        utterance.onstart = () => console.log('开始朗读:', word);
+        utterance.onerror = (e) => console.log('语音错误:', e);
+        
         speechSynthesis.speak(utterance);
+    } else {
+        console.log('浏览器不支持语音合成');
     }
 }
 
@@ -1106,6 +1124,11 @@ function shuffleArray(array) {
         const j = Math.floor(Math.random() * (i + 1));
         [array[i], array[j]] = [array[j], array[i]];
     }
+}
+
+// 测试语音功能
+function testVoice() {
+    speakWord('hello');
 }
 
 // 初始化游戏
