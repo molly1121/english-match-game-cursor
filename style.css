@@ -93,7 +93,7 @@ body {
     font-weight: bold;
     color: white;
     cursor: pointer;
-    transition: all 0.3s ease;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     box-shadow: 0 4px 15px rgba(0,0,0,0.2);
     text-align: center;
     padding: 5px;
@@ -101,6 +101,7 @@ body {
     overflow: hidden;
     user-select: none;
     position: relative;
+    will-change: transform, box-shadow;
 }
 
 .tile:hover {
@@ -115,9 +116,10 @@ body {
 }
 
 .tile.dragging {
-    transform: scale(1.1);
+    transform: scale(1.15) rotate(5deg);
     z-index: 100;
-    box-shadow: 0 12px 35px rgba(0,0,0,0.4);
+    box-shadow: 0 15px 40px rgba(0,0,0,0.5);
+    transition: transform 0.2s ease-out, box-shadow 0.2s ease-out;
 }
 
 .tile.highlight {
@@ -128,6 +130,17 @@ body {
 
 .tile.matched {
     animation: pulse 0.6s ease-in-out;
+}
+
+.tile.swapping {
+    animation: swapAnimation 0.4s ease-in-out;
+    z-index: 50;
+}
+
+@keyframes swapAnimation {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.2) rotate(10deg); }
+    100% { transform: scale(1); }
 }
 
 @keyframes pulse {
@@ -404,6 +417,11 @@ body {
         font-size: 1.1rem;
     }
     
+    .tile {
+        font-size: 3.2vw; /* 为老年人优化：更大的默认字体，但留出margin */
+        font-weight: 600; /* 稍微加粗，提高可读性 */
+    }
+    
     .game-info {
         flex-direction: column;
         gap: 15px;
@@ -412,6 +430,10 @@ body {
     
     .level-info, .score-info {
         justify-content: center;
+    }
+    
+    .btn {
+        font-size: 1rem; /* 按钮字体也稍微大一些 */
     }
     
     .modal-content {

@@ -264,10 +264,23 @@ modalRestartBtn.addEventListener('click', restartGame);
 function initGame() {
     updateDisplay();
     createVocabularyDisplay();
+    
+    // 页面失去焦点时清理拖动状态，防止卡住
+    document.addEventListener('visibilitychange', function() {
+        if (document.hidden) {
+            clearAllDragStates();
+        }
+    });
+    
+    // 窗口失去焦点时也清理
+    window.addEventListener('blur', clearAllDragStates);
 }
 
 // 开始游戏
 function startGame() {
+    // 清理所有拖动状态
+    clearAllDragStates();
+    
     gameState.gameStarted = true;
     gameState.startTime = Date.now();
     gameState.score = 0;
@@ -298,6 +311,13 @@ function createGameBoard() {
     
     // 确保初始布局没有可消除的组合
     ensureNoInitialMatches();
+    
+    // 检查是否有可用移动，如果没有就重新打乱
+    setTimeout(() => {
+        if (!hasAvailableMoves()) {
+            autoReshuffle();
+        }
+    }, 500);
     
     // 设置目标分数 - 平衡难度
     const levelMultiplier = gameState.currentLevel === 1 ? 50 : gameState.currentLevel === 2 ? 35 : 30;
@@ -408,15 +428,20 @@ function updateTileIds() {
 
 // 调整字体大小以适应单词长度
 function adjustFontSize(tile) {
-    // 根据屏幕大小动态调整最大宽度
+    // 根据屏幕大小动态调整参数
     const isMobile = window.innerWidth <= 768;
-    const tileSize = isMobile ? 12 : 70; // 获取瓦片实际大小
-    const maxWidth = isMobile ? tileSize * 0.8 : 60; // 手机端使用瓦片大小的80%
-    const defaultFontSize = isMobile ? 0.6 : 0.9; // 手机端默认字体更小
-    const minFontSize = 0.4; // 最小字体大小（rem）
     
-    // 先设置为默认字体大小
-    tile.style.fontSize = defaultFontSize + 'rem';
+    // 获取瓦片的实际大小（考虑CSS变量）
+    const computedStyle = window.getComputedStyle(tile);
+    const tileSize = parseFloat(computedStyle.width);
+    
+    // 为老年人优化：手机端使用更大的字体，并留出更多margin
+    const maxWidth = tileSize * 0.75; // 使用瓦片宽度的75%，留出25%的margin
+    const defaultFontSize = isMobile ? tileSize * 0.22 : tileSize * 0.16; // 稍微减小默认字体
+    const minFontSize = isMobile ? tileSize * 0.12 : tileSize * 0.10; // 最小字体也相应调整
+    
+    // 先设置为默认字体大小（使用px单位更精确）
+    tile.style.fontSize = defaultFontSize + 'px';
     
     // 等待一帧确保字体已应用
     requestAnimationFrame(() => {
@@ -425,14 +450,71 @@ function adjustFontSize(tile) {
             // 只有超出边界时才调整字体大小
             let fontSize = defaultFontSize;
             while (tile.scrollWidth > maxWidth && fontSize > minFontSize) {
-                fontSize -= 0.05;
-                tile.style.fontSize = fontSize + 'rem';
+                fontSize -= 2; // 每次减少2px
+                tile.style.fontSize = fontSize + 'px';
             }
         }
     });
     
     // 标记字体大小已经调整过，防止后续再调整
     tile.dataset.fontAdjusted = 'true';
+}
+
+// 检查是否还有可用的移动
+function hasAvailableMoves() {
+    // 首先检查当前是否已经有匹配（如果有，说明有可用移动）
+    const currentMatches = findMatches();
+    if (currentMatches.length > 0) {
+        return true;
+    }
+    
+    // 如果没有当前匹配，检查所有相邻的瓦片对，看是否有可以产生匹配的交换
+    for (let row = 0; row < gameState.boardSize; row++) {
+        for (let col = 0; col < gameState.boardSize; col++) {
+            const currentTile = gameState.board[row][col];
+            
+            // 检查右边的瓦片
+            if (col < gameState.boardSize - 1) {
+                const rightTile = gameState.board[row][col + 1];
+                if (checkIfSwapCreatesMatch(currentTile, rightTile)) {
+                    return true;
+                }
+            }
+            
+            // 检查下面的瓦片
+            if (row < gameState.boardSize - 1) {
+                const bottomTile = gameState.board[row + 1][col];
+                if (checkIfSwapCreatesMatch(currentTile, bottomTile)) {
+                    return true;
+                }
+            }
+        }
+    }
+    
+    return false;
+}
+
+// 清理所有拖动状态
+function clearAllDragStates() {
+    // 清理游戏状态
+    gameState.isDragging = false;
+    gameState.dragStartTile = null;
+    
+    // 清理所有瓦片的拖动状态
+    document.querySelectorAll('.tile').forEach(tile => {
+        tile.classList.remove('dragging', 'highlight');
+        tile.style.position = '';
+        tile.style.left = '';
+        tile.style.top = '';
+        tile.style.pointerEvents = '';
+        tile.style.transition = '';
+    });
+    
+    // 移除所有事件监听器
+    document.removeEventListener('mousemove', handleMouseMove);
+    document.removeEventListener('mouseup', handleMouseUp);
+    document.removeEventListener('touchmove', handleTouchMove);
+    document.removeEventListener('touchend', handleTouchEnd);
 }
 
 // 显示移动提示
@@ -462,6 +544,44 @@ function showMoveHint() {
     setTimeout(() => {
         if (hint.parentElement) {
             hint.remove();
+        }
+    }, 2000);
+}
+
+// 显示自动打乱提示
+function showAutoReshuffleHint() {
+    // 创建提示元素
+    const hint = document.createElement('div');
+    hint.className = 'auto-reshuffle-hint';
+    hint.textContent = '没有可用移动，自动重新打乱！';
+    hint.style.cssText = `
+        position: fixed;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        background: rgba(76, 175, 80, 0.9);
+        color: white;
+        padding: 15px 25px;
+        border-radius: 10px;
+        font-size: 1.1rem;
+        font-weight: bold;
+        z-index: 1000;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+        animation: fadeIn 0.3s ease-in;
+    `;
+    
+    // 添加到页面
+    document.body.appendChild(hint);
+    
+    // 2秒后移除提示
+    setTimeout(() => {
+        if (hint.parentNode) {
+            hint.style.animation = 'fadeOut 0.3s ease-out';
+            setTimeout(() => {
+                if (hint.parentNode) {
+                    hint.parentNode.removeChild(hint);
+                }
+            }, 300);
         }
     }, 2000);
 }
@@ -570,7 +690,11 @@ function handleTileMouseDown(e, tile) {
     e.preventDefault();
     gameState.isDragging = true;
     gameState.dragStartTile = tile;
-    tile.classList.add('dragging');
+    
+    // 添加拖动动画，使用requestAnimationFrame确保流畅
+    requestAnimationFrame(() => {
+        tile.classList.add('dragging');
+    });
     
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
@@ -583,7 +707,11 @@ function handleTileTouchStart(e, tile) {
     e.preventDefault();
     gameState.isDragging = true;
     gameState.dragStartTile = tile;
-    tile.classList.add('dragging');
+    
+    // 添加拖动动画，使用requestAnimationFrame确保流畅
+    requestAnimationFrame(() => {
+        tile.classList.add('dragging');
+    });
     
     document.addEventListener('touchmove', handleTouchMove);
     document.addEventListener('touchend', handleTouchEnd);
@@ -593,10 +721,13 @@ function handleTileTouchStart(e, tile) {
 function handleMouseMove(e) {
     if (!gameState.isDragging) return;
     
-    const targetTile = getTileFromPoint(e.clientX, e.clientY);
-    if (targetTile && targetTile !== gameState.dragStartTile) {
-        highlightAdjacentTile(targetTile);
-    }
+    // 使用requestAnimationFrame确保动画流畅
+    requestAnimationFrame(() => {
+        const targetTile = getTileFromPoint(e.clientX, e.clientY);
+        if (targetTile && targetTile !== gameState.dragStartTile) {
+            highlightAdjacentTile(targetTile);
+        }
+    });
 }
 
 // 处理触摸移动
@@ -604,11 +735,15 @@ function handleTouchMove(e) {
     if (!gameState.isDragging) return;
     
     e.preventDefault();
-    const touch = e.touches[0];
-    const targetTile = getTileFromPoint(touch.clientX, touch.clientY);
-    if (targetTile && targetTile !== gameState.dragStartTile) {
-        highlightAdjacentTile(targetTile);
-    }
+    
+    // 使用requestAnimationFrame确保动画流畅
+    requestAnimationFrame(() => {
+        const touch = e.touches[0];
+        const targetTile = getTileFromPoint(touch.clientX, touch.clientY);
+        if (targetTile && targetTile !== gameState.dragStartTile) {
+            highlightAdjacentTile(targetTile);
+        }
+    });
 }
 
 // 处理鼠标释放
@@ -653,49 +788,76 @@ function highlightAdjacentTile(tile) {
     }
 }
 
+// 检查交换是否会产生匹配
+function checkIfSwapCreatesMatch(tile1, tile2) {
+    // 临时交换瓦片内容
+    const tempWord1 = tile1.dataset.word;
+    const tempWord2 = tile2.dataset.word;
+    
+    tile1.dataset.word = tempWord2;
+    tile2.dataset.word = tempWord1;
+    
+    // 检查是否产生匹配
+    const matches = findMatches();
+    
+    // 恢复原始内容
+    tile1.dataset.word = tempWord1;
+    tile2.dataset.word = tempWord2;
+    
+    return matches.length > 0;
+}
+
 // 处理瓦片交换
 function handleTileSwap(targetTile) {
     if (!gameState.isDragging || !gameState.dragStartTile) return;
     
+    const dragStartTile = gameState.dragStartTile;
     gameState.isDragging = false;
-    gameState.dragStartTile.classList.remove('dragging');
+    gameState.dragStartTile = null;
+    
+    // 立即清理拖动状态，防止卡住
+    dragStartTile.classList.remove('dragging');
+    dragStartTile.style.position = '';
+    dragStartTile.style.left = '';
+    dragStartTile.style.top = '';
+    dragStartTile.style.pointerEvents = '';
+    dragStartTile.style.transition = '';
     
     // 清除所有高亮
     document.querySelectorAll('.tile.highlight').forEach(t => t.classList.remove('highlight'));
     
-    if (targetTile && isAdjacent(gameState.dragStartTile, targetTile)) {
-        // 交换瓦片
-        swapTiles(gameState.dragStartTile, targetTile);
-        gameState.moves++;
+    if (targetTile && isAdjacent(dragStartTile, targetTile)) {
+        // 检查当前是否已经有匹配
+        const currentMatches = findMatches();
         
-        // 更新瓦片的唯一标识（因为位置变了）
-        updateTileIds();
+        // 如果当前有匹配，允许任何交换（玩家可能想要消除现有匹配）
+        // 如果没有匹配，则检查交换是否会产生匹配
+        const shouldAllowSwap = currentMatches.length > 0 || checkIfSwapCreatesMatch(dragStartTile, targetTile);
         
-        // 检查是否有可消除的组合
-        setTimeout(() => {
-            const matches = findMatches();
-            if (matches.length > 0) {
-                // 有消除，移动有效
-                eliminateMatches(matches);
-                setTimeout(() => {
-                    fillBoard();
-                    checkGameOver();
-                }, 500);
-            } else {
-                // 没有消除，交换回来，移动无效
-                swapTiles(targetTile, gameState.dragStartTile);
-                gameState.moves--;
-                
-                // 重新更新瓦片标识
-                updateTileIds();
-                
-                // 显示提示信息
-                showMoveHint();
-            }
-        }, 300);
+        if (shouldAllowSwap) {
+            // 交换瓦片
+            swapTiles(dragStartTile, targetTile);
+            gameState.moves++;
+            
+            // 更新瓦片的唯一标识（因为位置变了）
+            updateTileIds();
+            
+            // 检查并消除匹配
+            setTimeout(() => {
+                const matches = findMatches();
+                if (matches.length > 0) {
+                    eliminateMatches(matches);
+                    setTimeout(() => {
+                        fillBoard();
+                        checkGameOver();
+                    }, 500);
+                }
+            }, 300);
+        } else {
+            // 这个交换不会产生匹配，不允许执行
+            // 静默处理，不显示提示
+        }
     }
-    
-    gameState.dragStartTile = null;
 }
 
 // 检查两个瓦片是否相邻
@@ -713,25 +875,38 @@ function isAdjacent(tile1, tile2) {
 
 // 交换两个瓦片
 function swapTiles(tile1, tile2) {
-    const tempWord = tile1.textContent;
-    const tempChinese = tile1.dataset.chinese;
-    const tempExample = tile1.dataset.example;
-    const tempTranslation = tile1.dataset.translation;
-    const tempColor = tile1.style.backgroundColor;
+    // 添加交换动画
+    tile1.classList.add('swapping');
+    tile2.classList.add('swapping');
     
-    tile1.textContent = tile2.textContent;
-    tile1.dataset.word = tile2.dataset.word;
-    tile1.dataset.chinese = tile2.dataset.chinese;
-    tile1.dataset.example = tile2.dataset.example;
-    tile1.dataset.translation = tile2.dataset.translation;
-    tile1.style.backgroundColor = tile2.style.backgroundColor;
-    
-    tile2.textContent = tempWord;
-    tile2.dataset.word = tempWord;
-    tile2.dataset.chinese = tempChinese;
-    tile2.dataset.example = tempExample;
-    tile2.dataset.translation = tempTranslation;
-    tile2.style.backgroundColor = tempColor;
+    // 短暂延迟后执行交换，让动画更明显
+    setTimeout(() => {
+        const tempWord = tile1.textContent;
+        const tempChinese = tile1.dataset.chinese;
+        const tempExample = tile1.dataset.example;
+        const tempTranslation = tile1.dataset.translation;
+        const tempColor = tile1.style.backgroundColor;
+        
+        tile1.textContent = tile2.textContent;
+        tile1.dataset.word = tile2.dataset.word;
+        tile1.dataset.chinese = tile2.dataset.chinese;
+        tile1.dataset.example = tile2.dataset.example;
+        tile1.dataset.translation = tile2.dataset.translation;
+        tile1.style.backgroundColor = tile2.style.backgroundColor;
+        
+        tile2.textContent = tempWord;
+        tile2.dataset.word = tempWord;
+        tile2.dataset.chinese = tempChinese;
+        tile2.dataset.example = tempExample;
+        tile2.dataset.translation = tempTranslation;
+        tile2.style.backgroundColor = tempColor;
+        
+        // 动画结束后移除类
+        setTimeout(() => {
+            tile1.classList.remove('swapping');
+            tile2.classList.remove('swapping');
+        }, 200);
+    }, 100);
     
     // 更新游戏板数组
     const row1 = parseInt(tile1.dataset.row);
@@ -925,6 +1100,14 @@ function fillBoard() {
             }
         }
     }
+    
+    // 填充完成后，检查是否还有可用移动
+    setTimeout(() => {
+        if (!hasAvailableMoves()) {
+            // 没有可用移动，自动打乱
+            autoReshuffle();
+        }
+    }, 500);
 }
 
 // 智能选择最优词汇
@@ -1004,9 +1187,29 @@ function nextLevel() {
     }
 }
 
+// 自动打乱（当没有可用移动时）
+function autoReshuffle() {
+    if (!gameState.gameStarted) return;
+    
+    // 清理所有拖动状态
+    clearAllDragStates();
+    
+    // 重新创建游戏板
+    createGameBoard();
+    
+    // 更新显示
+    updateDisplay();
+    
+    // 显示自动打乱提示
+    showAutoReshuffleHint();
+}
+
 // 重新打乱游戏板
 function reshuffleBoard() {
     if (!gameState.gameStarted) return;
+    
+    // 清理所有拖动状态
+    clearAllDragStates();
     
     // 重置分数和移动次数
     gameState.score = 0;
@@ -1024,6 +1227,9 @@ function reshuffleBoard() {
 
 // 重新开始游戏
 function restartGame() {
+    // 清理所有拖动状态
+    clearAllDragStates();
+    
     gameState.currentLevel = 1;
     gameState.score = 0;
     gameState.moves = 0;
