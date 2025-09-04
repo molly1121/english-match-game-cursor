@@ -1,5 +1,5 @@
 :root {
-    --tile-size: 70px;
+    --tile-size: 85px; /* 6x6 allows for larger tiles */
     --tile-gap: 8px;
 }
 
@@ -405,7 +405,7 @@ body {
 
 @media (max-width: 768px) {
     :root {
-        --tile-size: 12vw; /* 小屏以视口宽度为基准自动缩放 */
+        --tile-size: 14vw; /* 6x6格子更大，小屏以视口宽度为基准自动缩放 */
         --tile-gap: 6px;
     }
 
@@ -418,7 +418,7 @@ body {
     }
     
     .tile {
-        font-size: 7vw; /* 为老年人优化：超大的默认字体，提高可读性 */
+        font-size: 8.5vw; /* 6x6格子更大，可以使用更大的字体 */
         font-weight: 600; /* 稍微加粗，提高可读性 */
     }
     

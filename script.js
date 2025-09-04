@@ -223,7 +223,7 @@ let gameState = {
     currentLevel: 1,
     score: 0,
     board: [],
-    boardSize: 7,
+    boardSize: 6,
     selectedTile: null,
     gameStarted: false,
     gameTimer: null,
@@ -440,10 +440,10 @@ function adjustFontSize(tile) {
     const computedStyle = window.getComputedStyle(tile);
     const tileSize = parseFloat(computedStyle.width);
     
-    // 为老年人优化：使用更大的正常字体
-    const maxWidth = tileSize * 0.95; // 使用瓦片宽度的95%，留出5%的margin
-    const normalFontSize = isMobile ? tileSize * 0.5 : tileSize * 0.4; // 更大的正常字体
-    const minFontSize = isMobile ? tileSize * 0.2 : tileSize * 0.15; // 更大的最小字体限制
+    // 为老年人优化：6x6格子更大，可以使用更大的字体
+    const maxWidth = tileSize * 0.9; // 使用瓦片宽度的90%，留出10%的margin
+    const normalFontSize = isMobile ? tileSize * 0.6 : tileSize * 0.5; // 6x6格子允许更大字体
+    const minFontSize = isMobile ? tileSize * 0.25 : tileSize * 0.2; // 更大的最小字体限制
     
     // 先设置为正常大字体
     tile.style.fontSize = normalFontSize + 'px';
@@ -475,7 +475,7 @@ function checkAllTilesFontSize() {
     const tiles = document.querySelectorAll('.tile');
     tiles.forEach(tile => {
         const tileWidth = parseFloat(getComputedStyle(tile).width);
-        const maxWidth = tileWidth * 0.95;
+        const maxWidth = tileWidth * 0.9;
         
         if (tile.scrollWidth > maxWidth) {
             forceAdjustFontSize(tile);
@@ -488,9 +488,9 @@ function forceAdjustFontSize(tile) {
     const isMobile = window.innerWidth <= 768;
     const computedStyle = window.getComputedStyle(tile);
     const tileSize = parseFloat(computedStyle.width);
-    const maxWidth = tileSize * 0.95; // 使用95%的宽度
-    const normalFontSize = isMobile ? tileSize * 0.5 : tileSize * 0.4; // 更大的正常字体
-    const minFontSize = isMobile ? tileSize * 0.2 : tileSize * 0.15; // 更大的最小字体
+    const maxWidth = tileSize * 0.9; // 使用90%的宽度
+    const normalFontSize = isMobile ? tileSize * 0.6 : tileSize * 0.5; // 6x6格子允许更大字体
+    const minFontSize = isMobile ? tileSize * 0.25 : tileSize * 0.2; // 更大的最小字体
     
     // 先尝试正常大字体
     tile.style.fontSize = normalFontSize + 'px';
@@ -731,7 +731,7 @@ function createTile(vocab, row, col) {
     
     // 延迟再次检查，确保字体完全调整好
     setTimeout(() => {
-        if (tile.scrollWidth > parseFloat(getComputedStyle(tile).width) * 0.95) {
+        if (tile.scrollWidth > parseFloat(getComputedStyle(tile).width) * 0.9) {
             forceAdjustFontSize(tile);
         }
     }, 100);
@@ -1155,7 +1155,7 @@ function fillBoard() {
                     
                     // 延迟再次检查，确保字体完全调整好
                     setTimeout(() => {
-                        if (tile.scrollWidth > parseFloat(getComputedStyle(tile).width) * 0.95) {
+                        if (tile.scrollWidth > parseFloat(getComputedStyle(tile).width) * 0.9) {
                             forceAdjustFontSize(tile);
                         }
                     }, 100);
