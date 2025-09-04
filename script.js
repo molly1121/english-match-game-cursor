@@ -319,6 +319,11 @@ function createGameBoard() {
         }
     }, 500);
     
+    // 最终检查所有瓦片的字体显示
+    setTimeout(() => {
+        checkAllTilesFontSize();
+    }, 800);
+    
     // 设置目标分数 - 平衡难度
     const levelMultiplier = gameState.currentLevel === 1 ? 50 : gameState.currentLevel === 2 ? 35 : 30;
     gameState.targetScore = currentVocab.length * levelMultiplier;
@@ -436,9 +441,9 @@ function adjustFontSize(tile) {
     const tileSize = parseFloat(computedStyle.width);
     
     // 为老年人优化：手机端使用更大的字体，并留出更多margin
-    const maxWidth = tileSize * 0.75; // 使用瓦片宽度的75%，留出25%的margin
-    const defaultFontSize = isMobile ? tileSize * 0.22 : tileSize * 0.16; // 稍微减小默认字体
-    const minFontSize = isMobile ? tileSize * 0.12 : tileSize * 0.10; // 最小字体也相应调整
+    const maxWidth = tileSize * 0.9; // 使用瓦片宽度的90%，留出10%的margin
+    const defaultFontSize = isMobile ? tileSize * 0.35 : tileSize * 0.25; // 大幅增大默认字体
+    const minFontSize = isMobile ? tileSize * 0.15 : tileSize * 0.12; // 提高最小字体限制
     
     // 先设置为默认字体大小（使用px单位更精确）
     tile.style.fontSize = defaultFontSize + 'px';
@@ -450,14 +455,59 @@ function adjustFontSize(tile) {
             // 只有超出边界时才调整字体大小
             let fontSize = defaultFontSize;
             while (tile.scrollWidth > maxWidth && fontSize > minFontSize) {
-                fontSize -= 2; // 每次减少2px
+                fontSize -= 1; // 每次减少1px，更精细的调整
                 tile.style.fontSize = fontSize + 'px';
             }
+        }
+        
+        // 最终检查：如果还是超出，强制调整到最小字体
+        if (tile.scrollWidth > maxWidth) {
+            tile.style.fontSize = minFontSize + 'px';
         }
     });
     
     // 标记字体大小已经调整过，防止后续再调整
     tile.dataset.fontAdjusted = 'true';
+}
+
+// 检查所有瓦片的字体大小
+function checkAllTilesFontSize() {
+    const tiles = document.querySelectorAll('.tile');
+    tiles.forEach(tile => {
+        const tileWidth = parseFloat(getComputedStyle(tile).width);
+        const maxWidth = tileWidth * 0.9;
+        
+        if (tile.scrollWidth > maxWidth) {
+            forceAdjustFontSize(tile);
+        }
+    });
+}
+
+// 强制调整字体大小，确保单词完全显示
+function forceAdjustFontSize(tile) {
+    const isMobile = window.innerWidth <= 768;
+    const computedStyle = window.getComputedStyle(tile);
+    const tileSize = parseFloat(computedStyle.width);
+    const maxWidth = tileSize * 0.9; // 使用90%的宽度
+    const minFontSize = isMobile ? tileSize * 0.15 : tileSize * 0.12; // 更大的最小字体
+    
+    // 从最小字体开始，逐步增大直到合适
+    let fontSize = minFontSize;
+    tile.style.fontSize = fontSize + 'px';
+    
+    // 等待字体应用后检查
+    requestAnimationFrame(() => {
+        while (tile.scrollWidth <= maxWidth && fontSize < (isMobile ? tileSize * 0.4 : tileSize * 0.3)) {
+            fontSize += 0.5;
+            tile.style.fontSize = fontSize + 'px';
+        }
+        
+        // 如果最后一步超出了，回退一步
+        if (tile.scrollWidth > maxWidth) {
+            fontSize -= 0.5;
+            tile.style.fontSize = fontSize + 'px';
+        }
+    });
 }
 
 // 检查是否还有可用的移动
@@ -675,6 +725,13 @@ function createTile(vocab, row, col) {
     
     // 调整字体大小以适应单词长度
     adjustFontSize(tile);
+    
+    // 延迟再次检查，确保字体完全调整好
+    setTimeout(() => {
+        if (tile.scrollWidth > parseFloat(getComputedStyle(tile).width) * 0.9) {
+            forceAdjustFontSize(tile);
+        }
+    }, 100);
     
     // 添加触摸和鼠标事件
     tile.addEventListener('mousedown', (e) => handleTileMouseDown(e, tile));
@@ -1092,6 +1149,13 @@ function fillBoard() {
                 // 只为新瓦片调整字体大小
                 if (!tile.dataset.fontAdjusted) {
                     adjustFontSize(tile);
+                    
+                    // 延迟再次检查，确保字体完全调整好
+                    setTimeout(() => {
+                        if (tile.scrollWidth > parseFloat(getComputedStyle(tile).width) * 0.9) {
+                            forceAdjustFontSize(tile);
+                        }
+                    }, 100);
                 }
                 
                 setTimeout(() => {

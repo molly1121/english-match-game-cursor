@@ -418,7 +418,7 @@ body {
     }
     
     .tile {
-        font-size: 3.2vw; /* 为老年人优化：更大的默认字体，但留出margin */
+        font-size: 4.5vw; /* 为老年人优化：更大的默认字体，提高可读性 */
         font-weight: 600; /* 稍微加粗，提高可读性 */
     }
     
